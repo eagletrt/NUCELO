@@ -10,6 +10,7 @@
 #
 /output/MainBoard.step
 \#*.dxf
+build/
  
 # old files
 dont_delete_me_yet/

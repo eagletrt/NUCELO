@@ -4,10 +4,26 @@
       "name": "STM32",
       "includePath": [
         "Core/Inc",
+        "Core/Lib/can-cicd/external/flatcc",
+        "Core/Lib/can-cicd/external/flatcc/portable",
+        "Core/Lib/can-cicd/external/flatcc/reflection",
+        "Core/Lib/can-cicd/external/flatcc/support",
+        "Core/Lib/can-cicd/includes_generator/BMSinternal",
+        "Core/Lib/can-cicd/includes_generator/Primary",
+        "Core/Lib/can-cicd/includes_generator/Secondary",
+        "Core/Lib/can-cicd/naked_generator/BMSinternal/c",
+        "Core/Lib/can-cicd/naked_generator/Primary/c",
+        "Core/Lib/can-cicd/naked_generator/Secondary/c",
         "Drivers/CMSIS/Device/ST/STM32F4xx/Include",
         "Drivers/CMSIS/Include",
         "Drivers/STM32F4xx_HAL_Driver/Inc",
-        "Drivers/STM32F4xx_HAL_Driver/Inc/Legacy"
+        "Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
+        "Lib/can-cicd/includes_generator/BMSinternal",
+        "Lib/can-cicd/includes_generator/Primary",
+        "Lib/can-cicd/includes_generator/Secondary",
+        "Lib/can-cicd/naked_generator/BMSinternal/c",
+        "Lib/can-cicd/naked_generator/Primary/c",
+        "Lib/can-cicd/naked_generator/Secondary/c"
       ],
       "defines": [
         "STM32F446xx",

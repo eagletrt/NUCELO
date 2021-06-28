@@ -1,6 +1,0 @@
-[submodule "src/Lib/micro-libs"]
-	path = src/Lib/micro-libs
-	url = git@github.com:eagletrt/micro-libs.git
-[submodule "src/Lib/can-cicd"]
-	path = Core/src/Lib/can-cicd
-	url = git@github.com:eagletrt/can-cicd.git

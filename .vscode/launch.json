@@ -3,7 +3,7 @@
 		{
 			"showDevDebugOutput": true,
 			"cwd": "${workspaceRoot}",
-			"executable": "./build/nucelo-f4-can-bench.elf",
+			"executable": "./build/nucleo-f4-can-bench.elf",
 			"name": "Debug STM32",
 			"request": "launch",
 			"type": "cortex-debug",

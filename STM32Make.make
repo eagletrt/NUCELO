@@ -13,7 +13,7 @@
 ######################################
 # target
 ######################################
-TARGET = nucelo-f4-can-bench
+TARGET = nucleo-f4-can-bench
 
 
 ######################################
@@ -36,6 +36,15 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
+Core/Lib/can-cicd/external/flatcc/runtime/builder.c \
+Core/Lib/can-cicd/external/flatcc/runtime/emitter.c \
+Core/Lib/can-cicd/external/flatcc/runtime/json_parser.c \
+Core/Lib/can-cicd/external/flatcc/runtime/json_printer.c \
+Core/Lib/can-cicd/external/flatcc/runtime/refmap.c \
+Core/Lib/can-cicd/external/flatcc/runtime/verifier.c \
+Core/Lib/can-cicd/naked_generator/BMSinternal/c/BMSinternal.c \
+Core/Lib/can-cicd/naked_generator/Primary/c/Primary.c \
+Core/Lib/can-cicd/naked_generator/Secondary/c/Secondary.c \
 Core/Src/can.c \
 Core/Src/gpio.c \
 Core/Src/main.c \
@@ -126,6 +135,16 @@ AS_INCLUDES = \
 # C includes
 C_INCLUDES =  \
 -ICore/Inc \
+-ICore/Lib/can-cicd/external/flatcc \
+-ICore/Lib/can-cicd/external/flatcc/portable \
+-ICore/Lib/can-cicd/external/flatcc/reflection \
+-ICore/Lib/can-cicd/external/flatcc/support \
+-ICore/Lib/can-cicd/includes_generator/BMSinternal \
+-ICore/Lib/can-cicd/includes_generator/Primary \
+-ICore/Lib/can-cicd/includes_generator/Secondary \
+-ICore/Lib/can-cicd/naked_generator/BMSinternal/c \
+-ICore/Lib/can-cicd/naked_generator/Primary/c \
+-ICore/Lib/can-cicd/naked_generator/Secondary/c \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include \
 -IDrivers/STM32F4xx_HAL_Driver/Inc \
@@ -142,12 +161,14 @@ ifeq ($(DEBUG), 1)
 CFLAGS += -g -gdwarf-2
 endif
 
+# Add additional flags
+CFLAGS += 
+ASFLAGS += -specs=nosys.specs 
+CXXFLAGS = 
+CXXFLAGS += -feliminate-unused-debug-types
 
 # Generate dependency information
 CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
-
-CXXFLAGS?=
-CXXFLAGS += -feliminate-unused-debug-types
 
 #######################################
 # LDFLAGS
