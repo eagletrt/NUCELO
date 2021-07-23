@@ -21,126 +21,128 @@
 #include "can.h"
 
 /* USER CODE BEGIN 0 */
-#include "../Lib/can-cicd/includes_generator/BMSinternal/ids.h"
 #include "../Lib/can-cicd/includes_generator/Primary/ids.h"
+#include "../Lib/can-cicd/includes_generator/Primary/utils.h"
 #include "../Lib/can-cicd/includes_generator/Secondary/ids.h"
-#include "../Lib/can-cicd/naked_generator/BMSinternal/c/BMSinternal.h"
+#include "../Lib/can-cicd/includes_generator/Secondary/utils.h"
+#include "../Lib/can-cicd/includes_generator/bms/ids.h"
+#include "../Lib/can-cicd/includes_generator/bms/utils.h"
 #include "../Lib/can-cicd/naked_generator/Primary/c/Primary.h"
 #include "../Lib/can-cicd/naked_generator/Secondary/c/Secondary.h"
+#include "../Lib/can-cicd/naked_generator/bms/c/bms.h"
 #include "stdbool.h"
 #include "stdint.h"
 #include "stdio.h"
 #include "string.h"
 #include "usart.h"
 
+#define CAN_1MBIT_PRE 3
+#define CAN_1MBIT_BS1 CAN_BS1_11TQ
+#define CAN_1MBIT_BS2 CAN_BS2_2TQ
+
+#define CAN_125KBIT_PRE 42
+#define CAN_125KBIT_BS1 CAN_BS1_13TQ
+#define CAN_125KBIT_BS2 CAN_BS2_2TQ
+
 static void _can_error_handler(CAN_HandleTypeDef *hcan, char *msg);
 static void _can_apply_filter(CAN_HandleTypeDef *hcan);
 static void _return_id_string_name(uint16_t id, char buf[static 50]);
 
-static CAN_NetTypeDef active_net = CAN_NET_PRIM;
+static CAN_NetTypeDef active_net  = CAN_NET_PRIM;
+static CAN_Bitrate active_bitrate = CAN_BITRATE_1MBIT;
 
 /* USER CODE END 0 */
 
 CAN_HandleTypeDef hcan1;
 
 /* CAN1 init function */
-void MX_CAN1_Init(void)
-{
+void MX_CAN1_Init(void) {
+    /* USER CODE BEGIN CAN1_Init 0 */
 
-  /* USER CODE BEGIN CAN1_Init 0 */
+    /* USER CODE END CAN1_Init 0 */
 
-  /* USER CODE END CAN1_Init 0 */
+    /* USER CODE BEGIN CAN1_Init 1 */
 
-  /* USER CODE BEGIN CAN1_Init 1 */
-
-  /* USER CODE END CAN1_Init 1 */
-  hcan1.Instance = CAN1;
-  hcan1.Init.Prescaler = 21;
-  hcan1.Init.Mode = CAN_MODE_NORMAL;
-  hcan1.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan1.Init.TimeSeg1 = CAN_BS1_13TQ;
-  hcan1.Init.TimeSeg2 = CAN_BS2_2TQ;
-  hcan1.Init.TimeTriggeredMode = DISABLE;
-  hcan1.Init.AutoBusOff = DISABLE;
-  hcan1.Init.AutoWakeUp = DISABLE;
-  hcan1.Init.AutoRetransmission = DISABLE;
-  hcan1.Init.ReceiveFifoLocked = DISABLE;
-  hcan1.Init.TransmitFifoPriority = DISABLE;
-  if (HAL_CAN_Init(&hcan1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN CAN1_Init 2 */
+    /* USER CODE END CAN1_Init 1 */
+    hcan1.Instance                  = CAN1;
+    hcan1.Init.Prescaler            = 3;
+    hcan1.Init.Mode                 = CAN_MODE_NORMAL;
+    hcan1.Init.SyncJumpWidth        = CAN_SJW_2TQ;
+    hcan1.Init.TimeSeg1             = CAN_BS1_11TQ;
+    hcan1.Init.TimeSeg2             = CAN_BS2_2TQ;
+    hcan1.Init.TimeTriggeredMode    = DISABLE;
+    hcan1.Init.AutoBusOff           = DISABLE;
+    hcan1.Init.AutoWakeUp           = DISABLE;
+    hcan1.Init.AutoRetransmission   = DISABLE;
+    hcan1.Init.ReceiveFifoLocked    = DISABLE;
+    hcan1.Init.TransmitFifoPriority = DISABLE;
+    if (HAL_CAN_Init(&hcan1) != HAL_OK) {
+        Error_Handler();
+    }
+    /* USER CODE BEGIN CAN1_Init 2 */
     _can_apply_filter(&hcan1);
-  /* USER CODE END CAN1_Init 2 */
-
+    /* USER CODE END CAN1_Init 2 */
 }
 
-void HAL_CAN_MspInit(CAN_HandleTypeDef* canHandle)
-{
+void HAL_CAN_MspInit(CAN_HandleTypeDef *canHandle) {
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    if (canHandle->Instance == CAN1) {
+        /* USER CODE BEGIN CAN1_MspInit 0 */
 
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  if(canHandle->Instance==CAN1)
-  {
-  /* USER CODE BEGIN CAN1_MspInit 0 */
+        /* USER CODE END CAN1_MspInit 0 */
+        /* CAN1 clock enable */
+        __HAL_RCC_CAN1_CLK_ENABLE();
 
-  /* USER CODE END CAN1_MspInit 0 */
-    /* CAN1 clock enable */
-    __HAL_RCC_CAN1_CLK_ENABLE();
-
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    /**CAN1 GPIO Configuration
+        __HAL_RCC_GPIOA_CLK_ENABLE();
+        /**CAN1 GPIO Configuration
     PA11     ------> CAN1_RX
     PA12     ------> CAN1_TX
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_11|GPIO_PIN_12;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF9_CAN1;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+        GPIO_InitStruct.Pin       = GPIO_PIN_11 | GPIO_PIN_12;
+        GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
+        GPIO_InitStruct.Pull      = GPIO_NOPULL;
+        GPIO_InitStruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
+        GPIO_InitStruct.Alternate = GPIO_AF9_CAN1;
+        HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    /* CAN1 interrupt Init */
-    HAL_NVIC_SetPriority(CAN1_TX_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(CAN1_TX_IRQn);
-    HAL_NVIC_SetPriority(CAN1_RX0_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
-    HAL_NVIC_SetPriority(CAN1_RX1_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(CAN1_RX1_IRQn);
-    HAL_NVIC_SetPriority(CAN1_SCE_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(CAN1_SCE_IRQn);
-  /* USER CODE BEGIN CAN1_MspInit 1 */
+        /* CAN1 interrupt Init */
+        HAL_NVIC_SetPriority(CAN1_TX_IRQn, 0, 0);
+        HAL_NVIC_EnableIRQ(CAN1_TX_IRQn);
+        HAL_NVIC_SetPriority(CAN1_RX0_IRQn, 0, 0);
+        HAL_NVIC_EnableIRQ(CAN1_RX0_IRQn);
+        HAL_NVIC_SetPriority(CAN1_RX1_IRQn, 0, 0);
+        HAL_NVIC_EnableIRQ(CAN1_RX1_IRQn);
+        HAL_NVIC_SetPriority(CAN1_SCE_IRQn, 0, 0);
+        HAL_NVIC_EnableIRQ(CAN1_SCE_IRQn);
+        /* USER CODE BEGIN CAN1_MspInit 1 */
 
-  /* USER CODE END CAN1_MspInit 1 */
-  }
+        /* USER CODE END CAN1_MspInit 1 */
+    }
 }
 
-void HAL_CAN_MspDeInit(CAN_HandleTypeDef* canHandle)
-{
+void HAL_CAN_MspDeInit(CAN_HandleTypeDef *canHandle) {
+    if (canHandle->Instance == CAN1) {
+        /* USER CODE BEGIN CAN1_MspDeInit 0 */
 
-  if(canHandle->Instance==CAN1)
-  {
-  /* USER CODE BEGIN CAN1_MspDeInit 0 */
+        /* USER CODE END CAN1_MspDeInit 0 */
+        /* Peripheral clock disable */
+        __HAL_RCC_CAN1_CLK_DISABLE();
 
-  /* USER CODE END CAN1_MspDeInit 0 */
-    /* Peripheral clock disable */
-    __HAL_RCC_CAN1_CLK_DISABLE();
-
-    /**CAN1 GPIO Configuration
+        /**CAN1 GPIO Configuration
     PA11     ------> CAN1_RX
     PA12     ------> CAN1_TX
     */
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_11|GPIO_PIN_12);
+        HAL_GPIO_DeInit(GPIOA, GPIO_PIN_11 | GPIO_PIN_12);
 
-    /* CAN1 interrupt Deinit */
-    HAL_NVIC_DisableIRQ(CAN1_TX_IRQn);
-    HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
-    HAL_NVIC_DisableIRQ(CAN1_RX1_IRQn);
-    HAL_NVIC_DisableIRQ(CAN1_SCE_IRQn);
-  /* USER CODE BEGIN CAN1_MspDeInit 1 */
+        /* CAN1 interrupt Deinit */
+        HAL_NVIC_DisableIRQ(CAN1_TX_IRQn);
+        HAL_NVIC_DisableIRQ(CAN1_RX0_IRQn);
+        HAL_NVIC_DisableIRQ(CAN1_RX1_IRQn);
+        HAL_NVIC_DisableIRQ(CAN1_SCE_IRQn);
+        /* USER CODE BEGIN CAN1_MspDeInit 1 */
 
-  /* USER CODE END CAN1_MspDeInit 1 */
-  }
+        /* USER CODE END CAN1_MspDeInit 1 */
+    }
 }
 
 /* USER CODE BEGIN 1 */
@@ -251,6 +253,35 @@ static void _can_error_handler(CAN_HandleTypeDef *hcan, char *msg) {
     }
 }
 
+HAL_StatusTypeDef CAN_send_payload(
+    CAN_HandleTypeDef *hcan,
+    uint16_t msg_name,
+    uint8_t payload[static 8],
+    uint8_t pay_size) {
+    if (HAL_CAN_GetTxMailboxesFreeLevel(hcan) == 0) {
+        _can_error_handler(hcan, "No free mailboxes available\r\n");
+        return HAL_ERROR;
+    }
+
+    CAN_TxHeaderTypeDef header;
+    HAL_StatusTypeDef status;
+
+    uint32_t free_mailbox;
+
+    header.StdId              = msg_name;
+    header.IDE                = CAN_ID_STD;
+    header.RTR                = CAN_RTR_DATA;
+    header.TransmitGlobalTime = DISABLE;
+    header.DLC                = pay_size;
+    /* Send the message */
+    status = HAL_CAN_AddTxMessage(hcan, &header, payload, &free_mailbox);
+    if (status != HAL_OK)
+        _can_error_handler(hcan, "AddTxMessage failed");
+
+    print_log("CAN_send", CAN_HEADER);
+    return status;
+}
+
 HAL_StatusTypeDef CAN_send(CAN_HandleTypeDef *hcan, uint16_t msg_name) {
     if (HAL_CAN_GetTxMailboxesFreeLevel(hcan) == 0) {
         _can_error_handler(hcan, "No free mailboxes available\r\n");
@@ -258,17 +289,16 @@ HAL_StatusTypeDef CAN_send(CAN_HandleTypeDef *hcan, uint16_t msg_name) {
     }
 
     CAN_TxHeaderTypeDef header;
-    uint8_t data[1] = {};
     HAL_StatusTypeDef status;
+
+    uint8_t data[8] = {};
     uint32_t free_mailbox;
 
-    /* Prepare TX header */
     header.StdId              = msg_name;
-    header.IDE                = CAN_ID_STD;
     header.DLC                = 1;
+    header.IDE                = CAN_ID_STD;
     header.RTR                = CAN_RTR_DATA;
     header.TransmitGlobalTime = DISABLE;
-
     /* Send the message */
     status = HAL_CAN_AddTxMessage(hcan, &header, data, &free_mailbox);
     if (status != HAL_OK)
@@ -282,15 +312,15 @@ void CAN_get(CAN_HandleTypeDef *hcan, CAN_RxHeaderTypeDef *rxheader, uint8_t dat
     char buf[100]    = {};
     char id_name[50] = {};
     _return_id_string_name(rxheader->StdId, id_name);
-    sprintf(buf, "ID: %lu, MSG_NAME: %s", rxheader->StdId, id_name);
+    sprintf(buf, "ID: x%03X, MSG_NAME: %s", (uint16_t)rxheader->StdId, id_name);
     print_log(buf, CAN_HEADER);
     sprintf(
         buf,
-        "data: %X %X %X %X, DLC: %lu, RTR: %lu",
-        data[0] << 8 | data[1],
-        data[2] << 8 | data[3],
-        data[4] << 8 | data[5],
-        data[6] << 8 | data[7],
+        "data: x%02X x%02X x%02X x%02X, DLC: %lu, RTR: %lu",
+        data[1] << 8 | data[0],
+        data[3] << 8 | data[2],
+        data[5] << 8 | data[4],
+        data[7] << 8 | data[6],
         rxheader->DLC,
         rxheader->RTR);
     print_log(buf, NO_HEADER);
@@ -304,6 +334,39 @@ CAN_NetTypeDef CAN_get_network() {
     return active_net;
 }
 
+void CAN_change_bitrate(CAN_HandleTypeDef *hcan, CAN_Bitrate bitrate) {
+    if (bitrate == active_bitrate) {
+        print_log("Bitrate changed", CAN_HEADER);
+    }
+    /* De initialize CAN*/
+    HAL_CAN_DeInit(hcan);
+    switch (bitrate) {
+        case CAN_BITRATE_1MBIT:
+            hcan->Init.Prescaler = CAN_1MBIT_PRE;
+            hcan->Init.TimeSeg1  = CAN_1MBIT_BS1;
+            hcan->Init.TimeSeg2  = CAN_1MBIT_BS2;
+            break;
+        case CAN_BITRATE_125KBIT:
+            hcan->Init.Prescaler = CAN_125KBIT_PRE;
+            hcan->Init.TimeSeg1  = CAN_125KBIT_BS1;
+            hcan->Init.TimeSeg2  = CAN_125KBIT_BS2;
+            break;
+    }
+    active_bitrate = bitrate;
+    if (HAL_CAN_Init(hcan) != HAL_OK) {
+        print_log("Initialization error going in Error_Handler", CAN_ERR_HEADER);
+        Error_Handler();
+    }
+    _can_apply_filter(hcan);
+
+    char buf[50];
+    sprintf(buf, "Bitrate changed to %s", bitrate == CAN_BITRATE_1MBIT ? "1MBit" : "125KBit");
+    print_log(buf, CAN_HEADER);
+}
+CAN_Bitrate CAN_GetCurrentBitrate(CAN_HandleTypeDef *hcan) {
+    return active_bitrate;
+};
+
 static void _return_id_string_name(uint16_t id, char buf[static 50]) {
     switch (active_net) {
         case CAN_NET_PRIM:
@@ -313,7 +376,7 @@ static void _return_id_string_name(uint16_t id, char buf[static 50]) {
             Secondary_msgname_from_id(id, buf);
             break;
         case CAN_NET_BMS:
-            BMSinternal_msgname_from_id(id, buf);
+            bms_msgname_from_id(id, buf);
             break;
         case CAN_NO_NET:
         default:
@@ -326,8 +389,8 @@ static void _can_apply_filter(CAN_HandleTypeDef *hcan) {
     filter.FilterMode       = CAN_FILTERMODE_IDMASK;
     filter.FilterIdLow      = 0 << 5;                 // Take all ids from 0
     filter.FilterIdHigh     = ((1U << 11) - 1) << 5;  // to 2^11 - 1
-    filter.FilterMaskIdHigh = 0 << 5;                 // Don't care on can id bits
-    filter.FilterMaskIdLow  = 0 << 5;                 // Don't care on can id bits
+    filter.FilterMaskIdHigh = 0x00 << 5;              // Don't care on can id bits
+    filter.FilterMaskIdLow  = 0x00 << 5;              // Don't care on can id bits
     /* HAL considers IdLow and IdHigh not as just the ID of the can message but
         as the combination of: 
         STDID + RTR + IDE + 4 most significant bits of EXTID

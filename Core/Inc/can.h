@@ -26,9 +26,11 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "stdbool.h"
 
 /* USER CODE BEGIN Includes */
 typedef enum { CAN_NET_PRIM = 0U, CAN_NET_SEC, CAN_NET_BMS, CAN_NO_NET, NUM_CAN_NET } CAN_NetTypeDef;
+typedef enum { CAN_BITRATE_1MBIT, CAN_BITRATE_125KBIT } CAN_Bitrate;
 static char *CAN_NET_NAMES_G[NUM_CAN_NET] = {"CAN_NET_PRIM", "CAN_NET_SEC", "CAN_NET_BMS", "CAN_NO_NET"};
 
 /* USER CODE END Includes */
@@ -43,7 +45,24 @@ void MX_CAN1_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 /**
- * @brief     Send a can payload, all data is infered from the message name.
+ * @brief  Send a can message with specified payload.
+ *         WARNING:  Blocking function 
+ * 
+ * @param  hcan can handle of type @ref CAN_HancldeTypeDef
+ * @param  msg_name Can message name  
+ * @param  payload The payaload of the message. WARNING: array of at least 8 data
+ * @param  pay_size The size (number of uint8_t ) uesed by payload
+ *  
+ * @return Send result, values of type @ref HAL_StatusTypeDef 
+ */
+HAL_StatusTypeDef CAN_send_payload(
+    CAN_HandleTypeDef *hcan,
+    uint16_t msg_name,
+    uint8_t payload[static 8],
+    uint8_t pay_size);
+
+/**
+ * @brief     Send a can message, all data is infered from the message name.
  *            WARNING:  Blocking function 
  * 
  * @param     hcan can handle of type @ref CAN_HancldeTypeDef
@@ -73,6 +92,24 @@ void CAN_set_network(CAN_NetTypeDef net);
  * @return    Active netowrk, can be a value of @ref CAN_NetTypeDef
  */
 CAN_NetTypeDef CAN_get_network();
+
+/**
+ * @brief  Bitrate of the can peripheral
+ * 
+ * @param hcan Can handle pointer
+ * @param bitrate @arg of CAN_Bitrate
+ */
+void CAN_change_bitrate(CAN_HandleTypeDef *hcan, CAN_Bitrate bitrate);
+
+/**
+ * @brief  Get current bitrate for can handle
+ * 
+ * @param hcan Can peripheral handle
+ * 
+ * @return CAN_Bitrate 
+ */
+CAN_Bitrate CAN_GetCurrentBitrate(CAN_HandleTypeDef *hcan);
+
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

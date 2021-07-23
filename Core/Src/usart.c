@@ -113,7 +113,9 @@ volatile static bool _is_log_on = true;
 volatile static char character  = 0;
 
 void UART_disable_log(void) {
-    print_log("Logging disabled", LOG_HEADER);
+    char buf[50];
+    sprintf(buf, "Logging disabled. Press %s to enable", M_NAME_TO_STR(CMD_TOGGLE_LOG));
+    print_log(buf, LOG_HEADER);
     _is_log_on = false;
 };
 

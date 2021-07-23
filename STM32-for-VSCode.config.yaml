@@ -6,7 +6,7 @@
 # - entry_2
 
 # The project name
-target: nucleo-f4-can-bench
+target: nucelo
 # Can be C or C++
 language: C
 

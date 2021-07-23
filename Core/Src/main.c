@@ -40,6 +40,11 @@ typedef enum {
     CMD_TOGGLE_LOG          = 'l',
     CMD_CAN_SEND_BOOT_SYNC  = 'b',
     CMD_CAN_SEND_BOOT_GETID = 'g',
+    CMD_INV_ACT_NOTI        = 'i',
+    CMD_INV_DISABLE         = '1',
+    CMD_INV_ENABLE          = '2',
+    CMD_TOGGLE_CAN_BITRATE  = '@',
+    CMD_GET_CAN_BITRATE     = '#',
     CMD_NEWLINE             = ' ',
     CMD_HELP                = '?'
 } CMD_TypeDef;
@@ -49,6 +54,15 @@ typedef enum {
 /* USER CODE BEGIN PD */
 #define CAN_MSG_BOOT_SYNC  0x79U
 #define CAN_MSG_BOOT_GETID 0x02U
+
+#define CAN_INV_NOTI_EN_PAYLOAD  ((uint8_t[]){0x3dU, 0x51U, 0x64U, 0x00, 0x00, 0x00, 0x00, 0x00})
+#define CAN_INV_NOTI_EN_PAY_SIZE 3
+
+#define CAN_INV_DISABLE_PAYLOAD  ((uint8_t[]){0x51U, 0x04U, 0x00U, 0x00, 0x00, 0x00, 0x00, 0x00})
+#define CAN_INV_DISABLE_PAY_SIZE 3
+
+#define CAN_INV_ENABLE_PAYLOAD  ((uint8_t[]){0x51U, 0x08U, 0x00U, 0x00, 0x00, 0x00, 0x00, 0x00})
+#define CAN_INV_ENABLE_PAY_SIZE 3
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -212,6 +226,7 @@ void SystemClock_Config(void) {
 }
 
 /* USER CODE BEGIN 4 */
+// 0x201 0x3d, 0x51,0x64
 void _compute_command(char character) {
     char buf[40];
     switch (character) {
@@ -231,6 +246,25 @@ void _compute_command(char character) {
         case CMD_CAN_SEND_BOOT_GETID:
             CAN_send(&hcan1, CAN_MSG_BOOT_GETID);
             break;
+        case CMD_INV_ACT_NOTI:
+            CAN_send_payload(&hcan1, 0x201, CAN_INV_NOTI_EN_PAYLOAD, CAN_INV_NOTI_EN_PAY_SIZE);
+            break;
+        case CMD_INV_DISABLE:
+            CAN_send_payload(&hcan1, 0x201, CAN_INV_DISABLE_PAYLOAD, CAN_INV_DISABLE_PAY_SIZE);
+            break;
+        case CMD_INV_ENABLE:
+            CAN_send_payload(&hcan1, 0x201, CAN_INV_ENABLE_PAYLOAD, CAN_INV_ENABLE_PAY_SIZE);
+            break;
+        case CMD_TOGGLE_CAN_BITRATE:
+            CAN_GetCurrentBitrate(&hcan1) == CAN_BITRATE_1MBIT ? CAN_change_bitrate(&hcan1, CAN_BITRATE_125KBIT)
+                                                               : CAN_change_bitrate(&hcan1, CAN_BITRATE_1MBIT);
+            break;
+        case CMD_GET_CAN_BITRATE:
+
+            sprintf(
+                buf, "Current bitrate = %s", CAN_GetCurrentBitrate(&hcan1) == CAN_BITRATE_1MBIT ? "1MBit" : "125KBit");
+            print_log(buf, CAN_HEADER);
+            break;
         case CMD_NEWLINE:
             print_log("", NO_HEADER);
             break;
@@ -245,21 +279,48 @@ static void _cmd_help() {
     char buf[100];
     print_log("Help", NORM_HEADER);
     sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_NONE), CMD_NONE);
-    print_log(buf, NO_HEADER);
-    sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_ROTATE_ACTIVE_NET), CMD_ROTATE_ACTIVE_NET);
-    print_log(buf, NO_HEADER);
-    sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_TOGGLE_CAN_OUTPUT), CMD_TOGGLE_CAN_OUTPUT);
-    print_log(buf, NO_HEADER);
-    sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_TOGGLE_LOG), CMD_TOGGLE_LOG);
-    print_log(buf, NO_HEADER);
-    sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_CAN_SEND_BOOT_SYNC), CMD_CAN_SEND_BOOT_SYNC);
-    print_log(buf, NO_HEADER);
-    sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_CAN_SEND_BOOT_GETID), CMD_CAN_SEND_BOOT_GETID);
-    print_log(buf, NO_HEADER);
-    sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_NEWLINE), CMD_NEWLINE);
-    print_log(buf, NO_HEADER);
-    sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_HELP), CMD_HELP);
-    print_log(buf, NO_HEADER);
+#define make_help_msg(_cmd_name_)                                      \
+    do {                                                               \
+        print_log(buf, NO_HEADER);                                     \
+        sprintf(buf, "%s: %c", M_NAME_TO_STR(_cmd_name_), _cmd_name_); \
+    } while (0)
+
+    make_help_msg(CMD_ROTATE_ACTIVE_NET);
+    make_help_msg(CMD_TOGGLE_CAN_OUTPUT);
+    make_help_msg(CMD_TOGGLE_LOG);
+    make_help_msg(CMD_CAN_SEND_BOOT_SYNC);
+    make_help_msg(CMD_CAN_SEND_BOOT_GETID);
+    make_help_msg(CMD_INV_ACT_NOTI);
+    make_help_msg(CMD_INV_DISABLE);
+    make_help_msg(CMD_INV_ENABLE);
+    make_help_msg(CMD_TOGGLE_CAN_BITRATE);
+    make_help_msg(CMD_GET_CAN_BITRATE);
+    make_help_msg(CMD_NEWLINE);
+    make_help_msg(CMD_HELP);
+
+#undef make_help_msg
+
+    // print_log(buf, NO_HEADER);
+    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_ROTATE_ACTIVE_NET), CMD_ROTATE_ACTIVE_NET);
+    // print_log(buf, NO_HEADER);
+    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_TOGGLE_CAN_OUTPUT), CMD_TOGGLE_CAN_OUTPUT);
+    // print_log(buf, NO_HEADER);
+    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_TOGGLE_LOG), CMD_TOGGLE_LOG);
+    // print_log(buf, NO_HEADER);
+    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_CAN_SEND_BOOT_SYNC), CMD_CAN_SEND_BOOT_SYNC);
+    // print_log(buf, NO_HEADER);
+    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_CAN_SEND_BOOT_GETID), CMD_CAN_SEND_BOOT_GETID);
+    // print_log(buf, NO_HEADER);
+    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_INV_ACT_NOTI), CMD_INV_ACT_NOTI);
+    // print_log(buf, NO_HEADER);
+    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_INV_DISABLE), CMD_INV_DISABLE);
+    // print_log(buf, NO_HEADER);
+    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_INV_ENABLE), CMD_INV_ENABLE);
+    // print_log(buf, NO_HEADER);
+    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_NEWLINE), CMD_NEWLINE);
+    // print_log(buf, NO_HEADER);
+    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_HELP), CMD_HELP);
+    // print_log(buf, NO_HEADER);
 }
 /* USER CODE END 4 */
 

@@ -13,7 +13,7 @@
 ######################################
 # target
 ######################################
-TARGET = nucleo-f4-can-bench
+TARGET = nucelo
 
 
 ######################################
@@ -42,9 +42,9 @@ Core/Lib/can-cicd/external/flatcc/runtime/json_parser.c \
 Core/Lib/can-cicd/external/flatcc/runtime/json_printer.c \
 Core/Lib/can-cicd/external/flatcc/runtime/refmap.c \
 Core/Lib/can-cicd/external/flatcc/runtime/verifier.c \
-Core/Lib/can-cicd/naked_generator/BMSinternal/c/BMSinternal.c \
 Core/Lib/can-cicd/naked_generator/Primary/c/Primary.c \
 Core/Lib/can-cicd/naked_generator/Secondary/c/Secondary.c \
+Core/Lib/can-cicd/naked_generator/bms/c/bms.c \
 Core/Src/can.c \
 Core/Src/gpio.c \
 Core/Src/main.c \
@@ -139,12 +139,12 @@ C_INCLUDES =  \
 -ICore/Lib/can-cicd/external/flatcc/portable \
 -ICore/Lib/can-cicd/external/flatcc/reflection \
 -ICore/Lib/can-cicd/external/flatcc/support \
--ICore/Lib/can-cicd/includes_generator/BMSinternal \
 -ICore/Lib/can-cicd/includes_generator/Primary \
 -ICore/Lib/can-cicd/includes_generator/Secondary \
--ICore/Lib/can-cicd/naked_generator/BMSinternal/c \
+-ICore/Lib/can-cicd/includes_generator/bms \
 -ICore/Lib/can-cicd/naked_generator/Primary/c \
 -ICore/Lib/can-cicd/naked_generator/Secondary/c \
+-ICore/Lib/can-cicd/naked_generator/bms/c \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include \
 -IDrivers/STM32F4xx_HAL_Driver/Inc \
