@@ -29,6 +29,8 @@
 
 #include "common.h"
 #include "stdio.h"
+#include "../Lib/can-cicd/includes_generator/Primary/ids.h"
+#include "../Lib/can-cicd/naked_generator/Primary/c/Primary.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,6 +45,12 @@ typedef enum {
     CMD_INV_ACT_NOTI        = 'i',
     CMD_INV_DISABLE         = '1',
     CMD_INV_ENABLE          = '2',
+    CMD_TSON_REQ            = '3',
+    CMD_TSOFF_REQ           = '4',
+    CMD_TSON_CONF           = '5',
+    CMD_TSOFF_CONF          = '6',
+    CMD_INVON_CONF          = '7',
+    CMD_INVOFF_CONF         = '8',
     CMD_TOGGLE_CAN_BITRATE  = '@',
     CMD_GET_CAN_BITRATE     = '#',
     CMD_NEWLINE             = ' ',
@@ -63,6 +71,12 @@ typedef enum {
 
 #define CAN_INV_ENABLE_PAYLOAD  ((uint8_t[]){0x51U, 0x08U, 0x00U, 0x00, 0x00, 0x00, 0x00, 0x00})
 #define CAN_INV_ENABLE_PAY_SIZE 3
+
+#define CAN_INVON_CONF_PAYLOAD  ((uint8_t[]){0x40, 0x01, 0x00, 0x00, 0x00})
+#define CAN_INVON_CONF_PAY_SIZE 5
+
+#define CAN_INVOFF_CONF_PAYLOAD  ((uint8_t[]){0x40, 0x00, 0x00, 0x00, 0x00})
+#define CAN_INVOFF_CONF_PAY_SIZE 5
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -229,6 +243,9 @@ void SystemClock_Config(void) {
 // 0x201 0x3d, 0x51,0x64
 void _compute_command(char character) {
     char buf[40];
+    uint8_t msg_data[8];
+    size_t msg_dlc;
+
     switch (character) {
         case CMD_NONE:
             break;
@@ -255,6 +272,30 @@ void _compute_command(char character) {
         case CMD_INV_ENABLE:
             CAN_send_payload(&hcan1, 0x201, CAN_INV_ENABLE_PAYLOAD, CAN_INV_ENABLE_PAY_SIZE);
             break;
+
+        case CMD_TSON_REQ:
+            msg_dlc = serialize_Primary_SET_CAR_STATUS(msg_data, Primary_Car_Status_Set_RUN);
+            CAN_send_payload(&hcan1, ID_SET_CAR_STATUS, msg_data, msg_dlc);
+            break;
+        case CMD_TSOFF_REQ:
+            msg_dlc = serialize_Primary_SET_CAR_STATUS(msg_data, Primary_Car_Status_Set_IDLE);
+            CAN_send_payload(&hcan1, ID_SET_CAR_STATUS, msg_data, msg_dlc);
+            break;
+        case CMD_TSON_CONF:
+            msg_dlc = serialize_Primary_SET_TS_STATUS(msg_data, Primary_Ts_Status_ON);
+            CAN_send_payload(&hcan1, ID_TS_STATUS, msg_data, msg_dlc);
+            break;
+        case CMD_TSOFF_CONF:
+            msg_dlc = serialize_Primary_SET_TS_STATUS(msg_data, Primary_Ts_Status_OFF);
+            CAN_send_payload(&hcan1, ID_TS_STATUS, msg_data, msg_dlc);
+            break;
+        case CMD_INVON_CONF:
+            CAN_send_payload(&hcan1, 0x181, CAN_INVON_CONF_PAYLOAD, CAN_INVON_CONF_PAY_SIZE);
+            break;
+        case CMD_INVOFF_CONF:
+            CAN_send_payload(&hcan1, 0x181, CAN_INVOFF_CONF_PAYLOAD, CAN_INVOFF_CONF_PAY_SIZE);
+            break;
+
         case CMD_TOGGLE_CAN_BITRATE:
             CAN_GetCurrentBitrate(&hcan1) == CAN_BITRATE_1MBIT ? CAN_change_bitrate(&hcan1, CAN_BITRATE_125KBIT)
                                                                : CAN_change_bitrate(&hcan1, CAN_BITRATE_1MBIT);
@@ -293,6 +334,12 @@ static void _cmd_help() {
     make_help_msg(CMD_INV_ACT_NOTI);
     make_help_msg(CMD_INV_DISABLE);
     make_help_msg(CMD_INV_ENABLE);
+    make_help_msg(CMD_TSON_REQ);
+    make_help_msg(CMD_TSOFF_REQ);
+    make_help_msg(CMD_TSON_CONF);
+    make_help_msg(CMD_TSOFF_CONF);
+    make_help_msg(CMD_INVON_CONF);
+    make_help_msg(CMD_INVOFF_CONF);
     make_help_msg(CMD_TOGGLE_CAN_BITRATE);
     make_help_msg(CMD_GET_CAN_BITRATE);
     make_help_msg(CMD_NEWLINE);
