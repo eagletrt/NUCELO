@@ -143,6 +143,9 @@ void print_log(char *txt, UART_HeaderTypeDef header_type) {
             case CAN_ERR_HEADER:
                 header = "\r\n+[" M_NAME_TO_STR(MCU_NAME) " - CAN: # ERROR #]\r\n|+-> ";
                 break;
+            case PCU_HEADER:
+                header = "\r\n+[" M_NAME_TO_STR(MCU_NAME) " - PCU]\r\n|+-> ";
+                break;
             case NO_HEADER:
             default:
                 header = "\r\n|+-> ";
