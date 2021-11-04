@@ -26,7 +26,6 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stdbool.h"
 
 /* USER CODE BEGIN Includes */
 typedef enum { CAN_NET_PRIM = 0U, CAN_NET_SEC, CAN_NET_BMS, CAN_NO_NET, NUM_CAN_NET } CAN_NetTypeDef;

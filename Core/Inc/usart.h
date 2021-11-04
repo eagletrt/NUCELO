@@ -42,7 +42,7 @@ extern UART_HandleTypeDef huart2;
 void MX_USART2_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-typedef enum { NORM_HEADER = 0U, LOG_HEADER, CAN_HEADER, CAN_ERR_HEADER, NO_HEADER } UART_HeaderTypeDef;
+typedef enum { NORM_HEADER = 0U, LOG_HEADER, CAN_HEADER, CAN_ERR_HEADER, PCU_HEADER, NO_HEADER } UART_HeaderTypeDef;
 /**
  * @brief Print messages over the serial UART, prefixed with header "[NUCELO-F4-BENCH]"
  * @param txt         Pointer to input string without \r\n and null terminated
