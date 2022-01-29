@@ -36,12 +36,6 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
-Core/Lib/can-cicd/external/flatcc/runtime/builder.c \
-Core/Lib/can-cicd/external/flatcc/runtime/emitter.c \
-Core/Lib/can-cicd/external/flatcc/runtime/json_parser.c \
-Core/Lib/can-cicd/external/flatcc/runtime/json_printer.c \
-Core/Lib/can-cicd/external/flatcc/runtime/refmap.c \
-Core/Lib/can-cicd/external/flatcc/runtime/verifier.c \
 Core/Lib/can-cicd/naked_generator/Primary/c/Primary.c \
 Core/Lib/can-cicd/naked_generator/Secondary/c/Secondary.c \
 Core/Lib/can-cicd/naked_generator/bms/c/bms.c \
@@ -135,10 +129,6 @@ AS_INCLUDES = \
 # C includes
 C_INCLUDES =  \
 -ICore/Inc \
--ICore/Lib/can-cicd/external/flatcc \
--ICore/Lib/can-cicd/external/flatcc/portable \
--ICore/Lib/can-cicd/external/flatcc/reflection \
--ICore/Lib/can-cicd/external/flatcc/support \
 -ICore/Lib/can-cicd/includes_generator/Primary \
 -ICore/Lib/can-cicd/includes_generator/Secondary \
 -ICore/Lib/can-cicd/includes_generator/bms \

@@ -4,10 +4,6 @@
       "name": "STM32",
       "includePath": [
         "Core/Inc",
-        "Core/Lib/can-cicd/external/flatcc",
-        "Core/Lib/can-cicd/external/flatcc/portable",
-        "Core/Lib/can-cicd/external/flatcc/reflection",
-        "Core/Lib/can-cicd/external/flatcc/support",
         "Core/Lib/can-cicd/includes_generator/Primary",
         "Core/Lib/can-cicd/includes_generator/Secondary",
         "Core/Lib/can-cicd/includes_generator/bms",

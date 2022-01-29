@@ -46,6 +46,7 @@ typedef enum {
     CMD_INV_ENABLE          = '2',
     CMD_TSON_REQ            = '3',
     CMD_TSOFF_REQ           = '4',
+    CMD_TSPRECHRG           = 'p',
     CMD_TSON_CONF           = '5',
     CMD_TSOFF_CONF          = '6',
     CMD_INVON_CONF          = '7',
@@ -193,6 +194,10 @@ int main(void)
         }
 
         if (character != 0U) {
+            char buf[2];
+            sprintf(buf, "User input: %c", character);
+            print_log(buf, NO_HEADER);
+            
             _compute_command(character);
             character = 0U;
             HAL_UART_Receive_IT(&LOG_HUART, (uint8_t *)&character, sizeof(character));
@@ -288,11 +293,15 @@ void _compute_command(char character) {
             CAN_send_payload(&hcan1, ID_SET_CAR_STATUS, msg_data, msg_dlc);
             break;
         case CMD_TSON_CONF:
-            msg_dlc = serialize_Primary_SET_TS_STATUS(msg_data, Primary_Ts_Status_ON);
+            msg_dlc = serialize_Primary_TS_STATUS(msg_data, Primary_Ts_Status_ON);
+            CAN_send_payload(&hcan1, ID_TS_STATUS, msg_data, msg_dlc);
+            break;
+        case CMD_TSPRECHRG:
+            msg_dlc = serialize_Primary_TS_STATUS(msg_data, Primary_Ts_Status_PRECHARGE);
             CAN_send_payload(&hcan1, ID_TS_STATUS, msg_data, msg_dlc);
             break;
         case CMD_TSOFF_CONF:
-            msg_dlc = serialize_Primary_SET_TS_STATUS(msg_data, Primary_Ts_Status_OFF);
+            msg_dlc = serialize_Primary_TS_STATUS(msg_data, Primary_Ts_Status_OFF);
             CAN_send_payload(&hcan1, ID_TS_STATUS, msg_data, msg_dlc);
             break;
         case CMD_INVON_CONF:
