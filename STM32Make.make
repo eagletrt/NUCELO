@@ -36,9 +36,9 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
-Core/Lib/can-cicd/naked_generator/Primary/c/Primary.c \
-Core/Lib/can-cicd/naked_generator/Secondary/c/Secondary.c \
 Core/Lib/can-cicd/naked_generator/bms/c/bms.c \
+Core/Lib/can-cicd/naked_generator/primary/c/primary.c \
+Core/Lib/can-cicd/naked_generator/secondary/c/secondary.c \
 Core/Src/can.c \
 Core/Src/gpio.c \
 Core/Src/main.c \
@@ -123,18 +123,24 @@ C_DEFS =  \
 -DUSE_HAL_DRIVER
 
 
+# CXX defines
+CXX_DEFS =  \
+-DSTM32F446xx \
+-DUSE_HAL_DRIVER
+
+
 # AS includes
 AS_INCLUDES = \
 
 # C includes
 C_INCLUDES =  \
 -ICore/Inc \
--ICore/Lib/can-cicd/includes_generator/Primary \
--ICore/Lib/can-cicd/includes_generator/Secondary \
 -ICore/Lib/can-cicd/includes_generator/bms \
--ICore/Lib/can-cicd/naked_generator/Primary/c \
--ICore/Lib/can-cicd/naked_generator/Secondary/c \
+-ICore/Lib/can-cicd/includes_generator/primary \
+-ICore/Lib/can-cicd/includes_generator/secondary \
 -ICore/Lib/can-cicd/naked_generator/bms/c \
+-ICore/Lib/can-cicd/naked_generator/primary/c \
+-ICore/Lib/can-cicd/naked_generator/secondary/c \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include \
 -IDrivers/STM32F4xx_HAL_Driver/Inc \
@@ -147,6 +153,8 @@ ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffuncti
 
 CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
+CXXFLAGS = $(MCU) $(CXX_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections -feliminate-unused-debug-types
+
 ifeq ($(DEBUG), 1)
 CFLAGS += -g -gdwarf-2
 endif
@@ -154,11 +162,11 @@ endif
 # Add additional flags
 CFLAGS += 
 ASFLAGS += -specs=nosys.specs 
-CXXFLAGS = 
-CXXFLAGS += -feliminate-unused-debug-types
+CXXFLAGS += 
 
 # Generate dependency information
 CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
+CXXFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 
 #######################################
 # LDFLAGS
@@ -172,7 +180,7 @@ LIBDIR = \
 
 
 # Additional LD Flags from config file
-ADDITIONALLDFLAGS = -specs=nosys.specs 
+ADDITIONALLDFLAGS = -specs=nano.specs 
 
 LDFLAGS = $(MCU) $(ADDITIONALLDFLAGS) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
@@ -186,6 +194,7 @@ all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET
 # list of cpp program objects
 OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(CPP_SOURCES:.cpp=.o)))
 vpath %.cpp $(sort $(dir $(CPP_SOURCES)))
+
 # list of C objects
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 vpath %.c $(sort $(dir $(C_SOURCES)))
@@ -194,7 +203,10 @@ OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
 $(BUILD_DIR)/%.o: %.cpp STM32Make.make | $(BUILD_DIR) 
-	$(CXX) -c $(CXXFLAGS) $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.cpp=.lst)) $< -o $@
+	$(CXX) -c $(CXXFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.cpp=.lst)) $< -o $@
+
+$(BUILD_DIR)/%.o: %.cxx STM32Make.make | $(BUILD_DIR) 
+	$(CXX) -c $(CXXFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.cxx=.lst)) $< -o $@
 
 $(BUILD_DIR)/%.o: %.c STM32Make.make | $(BUILD_DIR) 
 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@

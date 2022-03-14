@@ -28,8 +28,8 @@
 
 #include "common.h"
 #include "stdio.h"
-#include "../Lib/can-cicd/includes_generator/Primary/ids.h"
-#include "../Lib/can-cicd/naked_generator/Primary/c/Primary.h"
+#include "../Lib/can-cicd/includes_generator/primary/ids.h"
+#include "../Lib/can-cicd/naked_generator/primary/c/primary.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,9 +51,6 @@ typedef enum {
     CMD_TSOFF_CONF          = '6',
     CMD_INVON_CONF          = '7',
     CMD_INVOFF_CONF         = '8',
-    CMD_PCU_IMP_ERR         = '9',
-    CMD_PCU_PLUS            = '+',
-    CMD_PCU_MINUS           = '-',
     CMD_TOGGLE_CAN_BITRATE  = '@',
     CMD_GET_CAN_BITRATE     = '#',
     CMD_NEWLINE             = ' ',
@@ -194,7 +191,7 @@ int main(void)
         }
 
         if (character != 0U) {
-            char buf[2];
+            char buf[20];
             sprintf(buf, "User input: %c", character);
             print_log(buf, NO_HEADER);
             
@@ -285,23 +282,23 @@ void _compute_command(char character) {
             break;
 
         case CMD_TSON_REQ:
-            msg_dlc = serialize_Primary_SET_CAR_STATUS(msg_data, Primary_Car_Status_Set_RUN);
+            msg_dlc = serialize_primary_SET_CAR_STATUS(msg_data, primary_Car_Status_Set_RUN);
             CAN_send_payload(&hcan1, ID_SET_CAR_STATUS, msg_data, msg_dlc);
             break;
         case CMD_TSOFF_REQ:
-            msg_dlc = serialize_Primary_SET_CAR_STATUS(msg_data, Primary_Car_Status_Set_IDLE);
+            msg_dlc = serialize_primary_SET_CAR_STATUS(msg_data, primary_Car_Status_Set_IDLE);
             CAN_send_payload(&hcan1, ID_SET_CAR_STATUS, msg_data, msg_dlc);
             break;
         case CMD_TSON_CONF:
-            msg_dlc = serialize_Primary_TS_STATUS(msg_data, Primary_Ts_Status_ON);
+            msg_dlc = serialize_primary_TS_STATUS(msg_data, primary_Ts_Status_ON);
             CAN_send_payload(&hcan1, ID_TS_STATUS, msg_data, msg_dlc);
             break;
         case CMD_TSPRECHRG:
-            msg_dlc = serialize_Primary_TS_STATUS(msg_data, Primary_Ts_Status_PRECHARGE);
+            msg_dlc = serialize_primary_TS_STATUS(msg_data, primary_Ts_Status_PRECHARGE);
             CAN_send_payload(&hcan1, ID_TS_STATUS, msg_data, msg_dlc);
             break;
         case CMD_TSOFF_CONF:
-            msg_dlc = serialize_Primary_TS_STATUS(msg_data, Primary_Ts_Status_OFF);
+            msg_dlc = serialize_primary_TS_STATUS(msg_data, primary_Ts_Status_OFF);
             CAN_send_payload(&hcan1, ID_TS_STATUS, msg_data, msg_dlc);
             break;
         case CMD_INVON_CONF:
@@ -310,33 +307,6 @@ void _compute_command(char character) {
         case CMD_INVOFF_CONF:
             CAN_send_payload(&hcan1, 0x181, CAN_INVOFF_CONF_PAYLOAD, CAN_INVOFF_CONF_PAY_SIZE);
             break;
-        case CMD_PCU_IMP_ERR:
-            print_log("Setting PCU IMPLAUSIBILITY error flag", PCU_HEADER);
-            
-            Primary_pcu_flags w, e;
-            setBit(e, Primary_pcu_flags_IMPLAUSIBILITY, 1);
-            msg_dlc = serialize_Primary_PCU_STATUS(msg_data, w, e);
-            CAN_send_payload(&hcan1, ID_PCU_STATUS, msg_data, msg_dlc);
-            break;
-        case CMD_PCU_PLUS:
-            if (PCU_accel_val <= 250)
-                PCU_accel_val += 5;
-            sprintf(buf, "Sending PCU accelerator value: %d/255", PCU_accel_val);
-            print_log(buf, PCU_HEADER);
-
-            msg_dlc = serialize_Primary_ACCELERATOR_PEDAL_VAL(msg_data, PCU_accel_val);
-            CAN_send_payload(&hcan1, ID_ACCELERATOR_PEDAL_VAL, msg_data, msg_dlc);
-            break;
-        case CMD_PCU_MINUS:
-            if (PCU_accel_val >= 5)
-                PCU_accel_val -= 5;
-            sprintf(buf, "Sending PCU accelerator value: %d/255", PCU_accel_val);
-            print_log(buf, PCU_HEADER);
-
-            msg_dlc = serialize_Primary_ACCELERATOR_PEDAL_VAL(msg_data, PCU_accel_val);
-            CAN_send_payload(&hcan1, ID_ACCELERATOR_PEDAL_VAL, msg_data, msg_dlc);
-            break;
-
         case CMD_TOGGLE_CAN_BITRATE:
             CAN_GetCurrentBitrate(&hcan1) == CAN_BITRATE_1MBIT ? CAN_change_bitrate(&hcan1, CAN_BITRATE_125KBIT)
                                                                : CAN_change_bitrate(&hcan1, CAN_BITRATE_1MBIT);
@@ -380,9 +350,6 @@ static void _cmd_help() {
     make_help_msg(CMD_TSOFF_CONF);
     make_help_msg(CMD_INVON_CONF);
     make_help_msg(CMD_INVOFF_CONF);
-    make_help_msg(CMD_PCU_IMP_ERR);
-    make_help_msg(CMD_PCU_PLUS);
-    make_help_msg(CMD_PCU_MINUS);
     make_help_msg(CMD_TOGGLE_CAN_BITRATE);
     make_help_msg(CMD_GET_CAN_BITRATE);
     make_help_msg(CMD_NEWLINE);

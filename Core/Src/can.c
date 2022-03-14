@@ -21,14 +21,14 @@
 #include "can.h"
 
 /* USER CODE BEGIN 0 */
-#include "../Lib/can-cicd/includes_generator/Primary/ids.h"
-#include "../Lib/can-cicd/includes_generator/Primary/utils.h"
-#include "../Lib/can-cicd/includes_generator/Secondary/ids.h"
-#include "../Lib/can-cicd/includes_generator/Secondary/utils.h"
+#include "../Lib/can-cicd/includes_generator/primary/ids.h"
+#include "../Lib/can-cicd/includes_generator/primary/utils.h"
+#include "../Lib/can-cicd/includes_generator/secondary/ids.h"
+#include "../Lib/can-cicd/includes_generator/secondary/utils.h"
 #include "../Lib/can-cicd/includes_generator/bms/ids.h"
 #include "../Lib/can-cicd/includes_generator/bms/utils.h"
-#include "../Lib/can-cicd/naked_generator/Primary/c/Primary.h"
-#include "../Lib/can-cicd/naked_generator/Secondary/c/Secondary.h"
+#include "../Lib/can-cicd/naked_generator/primary/c/primary.h"
+#include "../Lib/can-cicd/naked_generator/secondary/c/secondary.h"
 #include "../Lib/can-cicd/naked_generator/bms/c/bms.h"
 #include "stdbool.h"
 #include "stdint.h"
@@ -380,10 +380,10 @@ CAN_Bitrate CAN_GetCurrentBitrate(CAN_HandleTypeDef *hcan) {
 static void _return_id_string_name(uint16_t id, char buf[static 50]) {
     switch (active_net) {
         case CAN_NET_PRIM:
-            Primary_msgname_from_id(id, buf);
+            primary_msgname_from_id(id, buf);
             break;
         case CAN_NET_SEC:
-            Secondary_msgname_from_id(id, buf);
+            secondary_msgname_from_id(id, buf);
             break;
         case CAN_NET_BMS:
             bms_msgname_from_id(id, buf);
