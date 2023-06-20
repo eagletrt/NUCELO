@@ -13,6 +13,21 @@
 			"configFiles": [
 				"openocd.cfg"
 			]
+		},
+		{
+			"showDevDebugOutput": "parsed",
+			"cwd": "${workspaceRoot}",
+			"executable": "./build/nucelo.elf",
+			"name": "Attach STM32",
+			"request": "attach",
+			"type": "cortex-debug",
+			"servertype": "openocd",
+			"preLaunchTask": "Build STM",
+			"device": "stm32f446",
+			"configFiles": [
+				"openocd.cfg"
+			],
+			"svdFile": "STM32F446.svd"
 		}
 	]
 }

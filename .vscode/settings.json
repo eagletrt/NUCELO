@@ -1,9 +1,10 @@
 {
-	"cortex-debug.armToolchainPath": "/usr/bin",
-	"cortex-debug.openocdPath": "/usr/local/bin/openocd",
+	"cortex-debug.armToolchainPath": "/home/alex/Software/ARM-toolchain/bin",
+	"cortex-debug.openocdPath": "/usr/bin/openocd",
 	"files.associations": {
 		"stm32f4xx_hal.h": "c",
 		"usart.h": "c",
-		"can.h": "c"
+		"can.h": "c",
+		"stdbool.h": "c"
 	}
 }

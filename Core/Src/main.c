@@ -28,55 +28,25 @@
 
 #include "common.h"
 #include "stdio.h"
-#include "../Lib/can-cicd/includes_generator/primary/ids.h"
-#include "../Lib/can-cicd/naked_generator/primary/c/primary.h"
+#include "../Lib/can/lib/primary/primary_network.h"
+#include "../Lib/can/lib/secondary/secondary_network.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-typedef enum {
-    CMD_NONE                = 0U,
-    CMD_ROTATE_ACTIVE_NET   = 'n',
-    CMD_TOGGLE_CAN_OUTPUT   = 'c',
-    CMD_TOGGLE_LOG          = 'l',
-    CMD_CAN_SEND_BOOT_SYNC  = 'b',
-    CMD_CAN_SEND_BOOT_GETID = 'g',
-    CMD_INV_ACT_NOTI        = 'i',
-    CMD_INV_DISABLE         = '1',
-    CMD_INV_ENABLE          = '2',
-    CMD_TSON_REQ            = '3',
-    CMD_TSOFF_REQ           = '4',
-    CMD_TSPRECHRG           = 'p',
-    CMD_TSON_CONF           = '5',
-    CMD_TSOFF_CONF          = '6',
-    CMD_INVON_CONF          = '7',
-    CMD_INVOFF_CONF         = '8',
-    CMD_TOGGLE_CAN_BITRATE  = '@',
-    CMD_GET_CAN_BITRATE     = '#',
-    CMD_NEWLINE             = ' ',
-    CMD_HELP                = '?'
-} CMD_TypeDef;
+#define CMD_NONE 0U
+#define CMD_NEWLINE '\n'
+#define CMD_HELP 'h'
+#define CMD_SET_TS_ON 'T'
+#define CMD_SET_TS_OFF 't'
+#define CMD_SET_CAR_IDLE 'c'
+#define CMD_SET_CAR_READY 'C'
+#define CMD_SET_CAR_DRIVE 'D'
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define CAN_MSG_BOOT_SYNC  0x79U
-#define CAN_MSG_BOOT_GETID 0x02U
-
-#define CAN_INV_NOTI_EN_PAYLOAD  ((uint8_t[]){0x3dU, 0x51U, 0x64U, 0x00, 0x00, 0x00, 0x00, 0x00})
-#define CAN_INV_NOTI_EN_PAY_SIZE 3
-
-#define CAN_INV_DISABLE_PAYLOAD  ((uint8_t[]){0x51U, 0x04U, 0x00U, 0x00, 0x00, 0x00, 0x00, 0x00})
-#define CAN_INV_DISABLE_PAY_SIZE 3
-
-#define CAN_INV_ENABLE_PAYLOAD  ((uint8_t[]){0x51U, 0x08U, 0x00U, 0x00, 0x00, 0x00, 0x00, 0x00})
-#define CAN_INV_ENABLE_PAY_SIZE 3
-
-#define CAN_INVON_CONF_PAYLOAD  ((uint8_t[]){0x40, 0x01, 0x00, 0x00, 0x00})
-#define CAN_INVON_CONF_PAY_SIZE 5
-
-#define CAN_INVOFF_CONF_PAYLOAD  ((uint8_t[]){0x40, 0x00, 0x00, 0x00, 0x00})
-#define CAN_INVOFF_CONF_PAY_SIZE 5
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -87,13 +57,12 @@ typedef enum {
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint8_t PCU_accel_val = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-static void _compute_command(char character);
+static void _eval_command(char character);
 static void _cmd_help();
 
 /* USER CODE END PFP */
@@ -142,10 +111,6 @@ int main(void)
     }
     print_log("Initialization success", NORM_HEADER);
 
-#if 0
-    if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_RX_FIFO1_MSG_PENDING) != HAL_OK)
-        print_log("Failed to activate a CAN RX interrupts",CAN_ERR_HEADER);
-#endif
     if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_OVERRUN | CAN_IT_RX_FIFO1_OVERRUN) != HAL_OK)
         print_log("Failed to activate CAN_IT_RX_FIFOx_OVERRUN interrupt", CAN_ERR_HEADER);
 
@@ -175,6 +140,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
     volatile char character = 0;
     HAL_UART_Receive_IT(&LOG_HUART, (uint8_t *)&character, sizeof(character));
+
     while (1) {
     /* USER CODE END WHILE */
 
@@ -182,8 +148,8 @@ int main(void)
         if (HAL_CAN_GetRxFifoFillLevel(&hcan1, CAN_RX_FIFO0) > 0) {
             uint8_t data[8]              = {};
             CAN_RxHeaderTypeDef rxheader = {};
+
             if (HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &rxheader, data) == HAL_OK) {
-                CAN_get(&hcan1, &rxheader, data);
                 HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
             } else {
                 print_log("CAN GetRxMessage failed", CAN_ERR_HEADER);
@@ -191,12 +157,17 @@ int main(void)
         }
 
         if (character != 0U) {
-            char buf[20];
-            sprintf(buf, "User input: %c", character);
-            print_log(buf, NO_HEADER);
-            
-            _compute_command(character);
-            character = 0U;
+            if (character == CMD_NEWLINE)
+                print_log("", NO_HEADER);
+            else {
+                // char buf[20] = { 0U };
+                // sprintf(buf, "User input: %c", character);
+                // print_log(buf, NO_HEADER);
+                
+                _eval_command(character);
+                character = 0U;
+            }
+
             HAL_UART_Receive_IT(&LOG_HUART, (uint8_t *)&character, sizeof(character));
         };
     }
@@ -216,6 +187,7 @@ void SystemClock_Config(void)
   */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
+
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
@@ -232,6 +204,7 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+
   /** Initializes the CPU, AHB and APB buses clocks
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
@@ -249,135 +222,67 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 // 0x201 0x3d, 0x51,0x64
-void _compute_command(char character) {
-    char buf[40];
-    uint8_t msg_data[8];
+void _eval_command(char character) {
+    const uint8_t CAN_BUF_LEN = 8;
+    uint8_t msg_data[CAN_BUF_LEN];
     size_t msg_dlc;
 
     switch (character) {
         case CMD_NONE:
             break;
-        case CMD_ROTATE_ACTIVE_NET:
-            CAN_set_network((CAN_NetTypeDef)((CAN_get_network() + 1U) % NUM_CAN_NET));
-            sprintf(buf, "Listening to %s", CAN_NET_NAMES_G[CAN_get_network()]);
-            print_log(buf, CAN_HEADER);
-            break;
-        case CMD_TOGGLE_LOG:
-            UART_is_log_on() ? UART_disable_log() : UART_enable_log();
-            break;
-        case CMD_CAN_SEND_BOOT_SYNC:
-            CAN_send(&hcan1, CAN_MSG_BOOT_SYNC);
-            break;
-        case CMD_CAN_SEND_BOOT_GETID:
-            CAN_send(&hcan1, CAN_MSG_BOOT_GETID);
-            break;
-        case CMD_INV_ACT_NOTI:
-            CAN_send_payload(&hcan1, 0x201, CAN_INV_NOTI_EN_PAYLOAD, CAN_INV_NOTI_EN_PAY_SIZE);
-            break;
-        case CMD_INV_DISABLE:
-            CAN_send_payload(&hcan1, 0x201, CAN_INV_DISABLE_PAYLOAD, CAN_INV_DISABLE_PAY_SIZE);
-            break;
-        case CMD_INV_ENABLE:
-            CAN_send_payload(&hcan1, 0x201, CAN_INV_ENABLE_PAYLOAD, CAN_INV_ENABLE_PAY_SIZE);
-            break;
-
-        case CMD_TSON_REQ:
-            msg_dlc = serialize_primary_SET_CAR_STATUS(msg_data, primary_Car_Status_Set_RUN);
-            CAN_send_payload(&hcan1, ID_SET_CAR_STATUS, msg_data, msg_dlc);
-            break;
-        case CMD_TSOFF_REQ:
-            msg_dlc = serialize_primary_SET_CAR_STATUS(msg_data, primary_Car_Status_Set_IDLE);
-            CAN_send_payload(&hcan1, ID_SET_CAR_STATUS, msg_data, msg_dlc);
-            break;
-        case CMD_TSON_CONF:
-            msg_dlc = serialize_primary_TS_STATUS(msg_data, primary_Ts_Status_ON);
-            CAN_send_payload(&hcan1, ID_TS_STATUS, msg_data, msg_dlc);
-            break;
-        case CMD_TSPRECHRG:
-            msg_dlc = serialize_primary_TS_STATUS(msg_data, primary_Ts_Status_PRECHARGE);
-            CAN_send_payload(&hcan1, ID_TS_STATUS, msg_data, msg_dlc);
-            break;
-        case CMD_TSOFF_CONF:
-            msg_dlc = serialize_primary_TS_STATUS(msg_data, primary_Ts_Status_OFF);
-            CAN_send_payload(&hcan1, ID_TS_STATUS, msg_data, msg_dlc);
-            break;
-        case CMD_INVON_CONF:
-            CAN_send_payload(&hcan1, 0x181, CAN_INVON_CONF_PAYLOAD, CAN_INVON_CONF_PAY_SIZE);
-            break;
-        case CMD_INVOFF_CONF:
-            CAN_send_payload(&hcan1, 0x181, CAN_INVOFF_CONF_PAYLOAD, CAN_INVOFF_CONF_PAY_SIZE);
-            break;
-        case CMD_TOGGLE_CAN_BITRATE:
-            CAN_GetCurrentBitrate(&hcan1) == CAN_BITRATE_1MBIT ? CAN_change_bitrate(&hcan1, CAN_BITRATE_125KBIT)
-                                                               : CAN_change_bitrate(&hcan1, CAN_BITRATE_1MBIT);
-            break;
-        case CMD_GET_CAN_BITRATE:
-            sprintf(
-                buf, "Current bitrate = %s", CAN_GetCurrentBitrate(&hcan1) == CAN_BITRATE_1MBIT ? "1MBit" : "125KBit");
-            print_log(buf, CAN_HEADER);
-            break;
-        case CMD_NEWLINE:
-            print_log("", NO_HEADER);
-            break;
         case CMD_HELP:
             _cmd_help();
+            break;
+        case CMD_SET_TS_ON:
+            print_log("Setting TS ON", NO_HEADER);
+            primary_set_ts_status_das_t set_ts_on = { .ts_status_set = primary_set_ts_status_das_ts_status_set_ON };
+            msg_dlc = primary_set_ts_status_das_pack(msg_data, &set_ts_on, CAN_BUF_LEN);
+            CAN_send_payload(&hcan1, PRIMARY_SET_TS_STATUS_DAS_FRAME_ID, msg_data, msg_dlc);
+            break;
+        case CMD_SET_TS_OFF:
+            primary_set_ts_status_das_t set_ts_off = { .ts_status_set = primary_set_ts_status_das_ts_status_set_OFF };
+            msg_dlc = primary_set_ts_status_das_pack(msg_data, &set_ts_off, CAN_BUF_LEN);
+            CAN_send_payload(&hcan1, PRIMARY_SET_TS_STATUS_DAS_FRAME_ID, msg_data, msg_dlc);
+            break;
+        case CMD_SET_CAR_IDLE:
+            primary_set_car_status_t set_car_idle = { .car_status_set = primary_set_car_status_car_status_set_IDLE };
+            msg_dlc = primary_set_car_status_pack(msg_data, &set_car_idle, CAN_BUF_LEN);
+            CAN_send_payload(&hcan1, PRIMARY_SET_CAR_STATUS_FRAME_ID, msg_data, msg_dlc);
+            break;
+        case CMD_SET_CAR_READY:
+            primary_set_car_status_t set_car_ready = { .car_status_set = primary_set_car_status_car_status_set_READY };
+            msg_dlc = primary_set_car_status_pack(msg_data, &set_car_ready, CAN_BUF_LEN);
+            CAN_send_payload(&hcan1, PRIMARY_SET_CAR_STATUS_FRAME_ID, msg_data, msg_dlc);
+            break;
+        case CMD_SET_CAR_DRIVE:
+            primary_set_car_status_t set_car_drive = { .car_status_set = primary_set_car_status_car_status_set_DRIVE };
+            msg_dlc = primary_set_car_status_pack(msg_data, &set_car_drive, CAN_BUF_LEN);
+            CAN_send_payload(&hcan1, PRIMARY_SET_CAR_STATUS_FRAME_ID, msg_data, msg_dlc);
             break;
         default:
             break;
     }
 }
+
 static void _cmd_help() {
-    char buf[100];
-    print_log("Help", NORM_HEADER);
-    sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_NONE), CMD_NONE);
-#define make_help_msg(_cmd_name_)                                      \
-    do {                                                               \
-        print_log(buf, NO_HEADER);                                     \
-        sprintf(buf, "%s: %c", M_NAME_TO_STR(_cmd_name_), _cmd_name_); \
+    print_log("\r\n+----|    H e l p    |---------------------------", NO_HEADER);
+
+#define print_help_msg(cmd_char, cmd_desc)             \
+    do {                                               \
+        char buf[100];                                 \
+        sprintf(buf, "| %c : %s", cmd_char, cmd_desc); \
+        print_log(buf, NO_HEADER);                     \
     } while (0)
 
-    make_help_msg(CMD_ROTATE_ACTIVE_NET);
-    make_help_msg(CMD_TOGGLE_CAN_OUTPUT);
-    make_help_msg(CMD_TOGGLE_LOG);
-    make_help_msg(CMD_CAN_SEND_BOOT_SYNC);
-    make_help_msg(CMD_CAN_SEND_BOOT_GETID);
-    make_help_msg(CMD_INV_ACT_NOTI);
-    make_help_msg(CMD_INV_DISABLE);
-    make_help_msg(CMD_INV_ENABLE);
-    make_help_msg(CMD_TSON_REQ);
-    make_help_msg(CMD_TSOFF_REQ);
-    make_help_msg(CMD_TSON_CONF);
-    make_help_msg(CMD_TSOFF_CONF);
-    make_help_msg(CMD_INVON_CONF);
-    make_help_msg(CMD_INVOFF_CONF);
-    make_help_msg(CMD_TOGGLE_CAN_BITRATE);
-    make_help_msg(CMD_GET_CAN_BITRATE);
-    make_help_msg(CMD_NEWLINE);
-    make_help_msg(CMD_HELP);
-
+    print_help_msg(CMD_HELP, "Print help message");
+    print_help_msg(CMD_SET_TS_ON, "Send: SetTsStatus = ON");
+    print_help_msg(CMD_SET_TS_OFF, "Send: SetTsStatus = OFF");
+    print_help_msg(CMD_SET_CAR_IDLE, "Send: SetCarStatus = IDLE");
+    print_help_msg(CMD_SET_CAR_READY, "Send: SetCarStatus = READY");
+    print_help_msg(CMD_SET_CAR_DRIVE, "Send: SetCarStatus = DRIVE");
 #undef make_help_msg
 
-    // print_log(buf, NO_HEADER);
-    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_ROTATE_ACTIVE_NET), CMD_ROTATE_ACTIVE_NET);
-    // print_log(buf, NO_HEADER);
-    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_TOGGLE_CAN_OUTPUT), CMD_TOGGLE_CAN_OUTPUT);
-    // print_log(buf, NO_HEADER);
-    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_TOGGLE_LOG), CMD_TOGGLE_LOG);
-    // print_log(buf, NO_HEADER);
-    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_CAN_SEND_BOOT_SYNC), CMD_CAN_SEND_BOOT_SYNC);
-    // print_log(buf, NO_HEADER);
-    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_CAN_SEND_BOOT_GETID), CMD_CAN_SEND_BOOT_GETID);
-    // print_log(buf, NO_HEADER);
-    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_INV_ACT_NOTI), CMD_INV_ACT_NOTI);
-    // print_log(buf, NO_HEADER);
-    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_INV_DISABLE), CMD_INV_DISABLE);
-    // print_log(buf, NO_HEADER);
-    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_INV_ENABLE), CMD_INV_ENABLE);
-    // print_log(buf, NO_HEADER);
-    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_NEWLINE), CMD_NEWLINE);
-    // print_log(buf, NO_HEADER);
-    // sprintf(buf, "%s: %c", M_NAME_TO_STR(CMD_HELP), CMD_HELP);
-    // print_log(buf, NO_HEADER);
+    print_log("+------------------------------------------------\r\n", NO_HEADER);
 }
 /* USER CODE END 4 */
 
@@ -411,5 +316,3 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

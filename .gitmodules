@@ -1,4 +1,4 @@
-[submodule "Core/Lib/can-cicd"]
-	path = Core/Lib/can-cicd
-	url = git@github.com:eagletrt/can-cicd-forkme.git
-	branch = build
+[submodule "Core/Lib/can"]
+	path = Core/Lib/can
+	url = git@github.com:eagletrt/can.git
+	branch = build-evo

@@ -1,3 +1,4 @@
+/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file    can.c
@@ -6,50 +7,31 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
-  * All rights reserved.</center></h2>
+  * Copyright (c) 2023 STMicroelectronics.
+  * All rights reserved.
   *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
-
+/* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "can.h"
 
 /* USER CODE BEGIN 0 */
-#include "../Lib/can-cicd/includes_generator/primary/ids.h"
-#include "../Lib/can-cicd/includes_generator/primary/utils.h"
-#include "../Lib/can-cicd/includes_generator/secondary/ids.h"
-#include "../Lib/can-cicd/includes_generator/secondary/utils.h"
-#include "../Lib/can-cicd/includes_generator/bms/ids.h"
-#include "../Lib/can-cicd/includes_generator/bms/utils.h"
-#include "../Lib/can-cicd/naked_generator/primary/c/primary.h"
-#include "../Lib/can-cicd/naked_generator/secondary/c/secondary.h"
-#include "../Lib/can-cicd/naked_generator/bms/c/bms.h"
+#include "../Lib/can/lib/primary/primary_network.h"
+#include "../Lib/can/lib/secondary/secondary_network.h"
 #include "stdbool.h"
 #include "stdint.h"
 #include "stdio.h"
 #include "string.h"
 #include "usart.h"
 
-#define CAN_1MBIT_PRE 3
-#define CAN_1MBIT_BS1 CAN_BS1_11TQ
-#define CAN_1MBIT_BS2 CAN_BS2_2TQ
-
-#define CAN_125KBIT_PRE 42
-#define CAN_125KBIT_BS1 CAN_BS1_13TQ
-#define CAN_125KBIT_BS2 CAN_BS2_2TQ
 
 static void _can_error_handler(CAN_HandleTypeDef *hcan, char *msg);
 static void _can_apply_filter(CAN_HandleTypeDef *hcan);
-static void _return_id_string_name(uint16_t id, char buf[static 50]);
-
-static CAN_NetTypeDef active_net  = CAN_NET_PRIM;
-static CAN_Bitrate active_bitrate = CAN_BITRATE_1MBIT;
 
 /* USER CODE END 0 */
 
@@ -158,19 +140,17 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef* canHandle)
 /* USER CODE BEGIN 1 */
 void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan) {
     char buf[50];
-    sprintf(buf, "Code: %lu", (uint32_t)hcan->ErrorCode);
+    sprintf(buf, "[CAN ERROR] Code: %lu", (uint32_t)hcan->ErrorCode);
     _can_error_handler(hcan, buf);
 }
 
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
-    print_log("FUCKING RX1", CAN_HEADER);
     CAN_RxHeaderTypeDef h;
     uint8_t data[8];
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &h, data);
 }
 
 void HAL_CAN_RxFifo1MsgPendingCallback(CAN_HandleTypeDef *hcan) {
-    print_log("FUCKING RX2", CAN_HEADER);
     CAN_RxHeaderTypeDef h;
     uint8_t data[8];
     HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO1, &h, data);
@@ -264,10 +244,11 @@ static void _can_error_handler(CAN_HandleTypeDef *hcan, char *msg) {
 }
 
 HAL_StatusTypeDef CAN_send_payload(
-    CAN_HandleTypeDef *hcan,
-    uint16_t msg_name,
-    uint8_t payload[static 8],
-    uint8_t pay_size) {
+        CAN_HandleTypeDef *hcan,
+        uint16_t msg_id,
+        uint8_t payload[static 8],
+        uint8_t pay_size) {
+
     if (HAL_CAN_GetTxMailboxesFreeLevel(hcan) == 0) {
         _can_error_handler(hcan, "No free mailboxes available\r\n");
         return HAL_ERROR;
@@ -278,122 +259,33 @@ HAL_StatusTypeDef CAN_send_payload(
 
     uint32_t free_mailbox;
 
-    header.StdId              = msg_name;
+    header.StdId              = msg_id;
     header.IDE                = CAN_ID_STD;
     header.RTR                = CAN_RTR_DATA;
     header.TransmitGlobalTime = DISABLE;
     header.DLC                = pay_size;
+
     /* Send the message */
     status = HAL_CAN_AddTxMessage(hcan, &header, payload, &free_mailbox);
+
     if (status != HAL_OK)
         _can_error_handler(hcan, "AddTxMessage failed");
 
     print_log("CAN_send", CAN_HEADER);
+
+    char buf[100];
+    uint8_t buff_off = 0;
+    buff_off += snprintf(buf, 100, "0x%02X | ", msg_id);
+
+    for (uint8_t i = 0; i < pay_size; i++)
+        snprintf(buf + buff_off, 100 - buff_off, "0x%02X "  , payload[i]);
+
+    print_log(buf, NORM_HEADER);
+
     return status;
 }
 
-HAL_StatusTypeDef CAN_send(CAN_HandleTypeDef *hcan, uint16_t msg_name) {
-    if (HAL_CAN_GetTxMailboxesFreeLevel(hcan) == 0) {
-        _can_error_handler(hcan, "No free mailboxes available\r\n");
-        return HAL_ERROR;
-    }
 
-    CAN_TxHeaderTypeDef header;
-    HAL_StatusTypeDef status;
-
-    uint8_t data[8] = {};
-    uint32_t free_mailbox;
-
-    header.StdId              = msg_name;
-    header.DLC                = 1;
-    header.IDE                = CAN_ID_STD;
-    header.RTR                = CAN_RTR_DATA;
-    header.TransmitGlobalTime = DISABLE;
-    /* Send the message */
-    status = HAL_CAN_AddTxMessage(hcan, &header, data, &free_mailbox);
-    if (status != HAL_OK)
-        _can_error_handler(hcan, "AddTxMessage failed");
-
-    print_log("CAN_send", CAN_HEADER);
-    return status;
-}
-
-void CAN_get(CAN_HandleTypeDef *hcan, CAN_RxHeaderTypeDef *rxheader, uint8_t data[static 8]) {
-    char buf[100]    = {};
-    char id_name[50] = {};
-    _return_id_string_name(rxheader->StdId, id_name);
-    sprintf(buf, "ID: x%03X, MSG_NAME: %s", (uint16_t)rxheader->StdId, id_name);
-    print_log(buf, CAN_HEADER);
-    sprintf(
-        buf,
-        "data: x%02X x%02X x%02X x%02X, DLC: %lu, RTR: %lu",
-        data[1] << 8 | data[0],
-        data[3] << 8 | data[2],
-        data[5] << 8 | data[4],
-        data[7] << 8 | data[6],
-        rxheader->DLC,
-        rxheader->RTR);
-    print_log(buf, NO_HEADER);
-}
-void CAN_set_network(CAN_NetTypeDef net) {
-    if (net >= 0U || net < NUM_CAN_NET) {
-        active_net = net;
-    }
-}
-CAN_NetTypeDef CAN_get_network() {
-    return active_net;
-}
-
-void CAN_change_bitrate(CAN_HandleTypeDef *hcan, CAN_Bitrate bitrate) {
-    if (bitrate == active_bitrate) {
-        print_log("Bitrate changed", CAN_HEADER);
-    }
-    /* De initialize CAN*/
-    HAL_CAN_DeInit(hcan);
-    switch (bitrate) {
-        case CAN_BITRATE_1MBIT:
-            hcan->Init.Prescaler = CAN_1MBIT_PRE;
-            hcan->Init.TimeSeg1  = CAN_1MBIT_BS1;
-            hcan->Init.TimeSeg2  = CAN_1MBIT_BS2;
-            break;
-        case CAN_BITRATE_125KBIT:
-            hcan->Init.Prescaler = CAN_125KBIT_PRE;
-            hcan->Init.TimeSeg1  = CAN_125KBIT_BS1;
-            hcan->Init.TimeSeg2  = CAN_125KBIT_BS2;
-            break;
-    }
-    active_bitrate = bitrate;
-    if (HAL_CAN_Init(hcan) != HAL_OK) {
-        print_log("Initialization error going in Error_Handler", CAN_ERR_HEADER);
-        Error_Handler();
-    }
-    _can_apply_filter(hcan);
-
-    char buf[50];
-    sprintf(buf, "Bitrate changed to %s", bitrate == CAN_BITRATE_1MBIT ? "1MBit" : "125KBit");
-    print_log(buf, CAN_HEADER);
-}
-CAN_Bitrate CAN_GetCurrentBitrate(CAN_HandleTypeDef *hcan) {
-    return active_bitrate;
-};
-
-static void _return_id_string_name(uint16_t id, char buf[static 50]) {
-    switch (active_net) {
-        case CAN_NET_PRIM:
-            primary_msgname_from_id(id, buf);
-            break;
-        case CAN_NET_SEC:
-            secondary_msgname_from_id(id, buf);
-            break;
-        case CAN_NET_BMS:
-            bms_msgname_from_id(id, buf);
-            break;
-        case CAN_NO_NET:
-        default:
-            buf[0] = '\0';
-            break;
-    }
-}
 static void _can_apply_filter(CAN_HandleTypeDef *hcan) {
     CAN_FilterTypeDef filter;
     filter.FilterMode       = CAN_FILTERMODE_IDMASK;
@@ -414,5 +306,3 @@ static void _can_apply_filter(CAN_HandleTypeDef *hcan) {
         _can_error_handler(hcan, "Failed to configure CAN filter");
 }
 /* USER CODE END 1 */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -1,3 +1,4 @@
+/* USER CODE BEGIN Header */
 /**
   ******************************************************************************
   * @file    usart.c
@@ -6,17 +7,16 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
-  * All rights reserved.</center></h2>
+  * Copyright (c) 2023 STMicroelectronics.
+  * All rights reserved.
   *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
+  * This software is licensed under terms that can be found in the LICENSE file
+  * in the root directory of this software component.
+  * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
   */
-
+/* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "usart.h"
 
@@ -142,7 +142,7 @@ void print_log(char *txt, UART_HeaderTypeDef header_type) {
         char *header;
         switch (header_type) {
             case NORM_HEADER:
-                header = "\r\n+[" M_NAME_TO_STR(MCU_NAME) "]\r\n|+-> ";
+                header = "|+-> ";
                 break;
             case LOG_HEADER:
                 header = "\r\n+[" M_NAME_TO_STR(MCU_NAME) " - LOG]\r\n|+-> ";
@@ -158,21 +158,14 @@ void print_log(char *txt, UART_HeaderTypeDef header_type) {
                 break;
             case NO_HEADER:
             default:
-                header = "\r\n|+-> ";
+                header = "";
                 break;
         }
         char buf[200];
-        sprintf(buf, "%s", header);
-        strncat(buf, txt, 200 - strlen(buf) - 1);
+        sprintf(buf, "%s%s\n\r", header, txt);
         HAL_UART_Transmit(&LOG_HUART, (uint8_t *)buf, strlen(buf), 500);
     }
 }
 
-#if 0
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-}
-#endif
 
 /* USER CODE END 1 */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -53,13 +53,15 @@ excludes:
   - "**/*[Tt]est*/**"
   - "**/*[Tt]est*"
   - "**_template.*"
+  - Core/Lib/can/lib/inverters/**
 
 # Include directories (directories containing .h or .hpp files)
 # If a CubeMX makefile is present it will automatically include the include directories from that makefile.
 includeDirectories: 
   - Inc/**
   - Core/Inc/**
-  - Core/Lib/**
+  - Core/Lib/can/lib/primary/**
+  - Core/Lib/can/lib/secondary/**
 
 
 # Files that should be included in the compilation.
@@ -70,7 +72,8 @@ includeDirectories:
 sourceFiles:  
   - Src/**
   - Core/Src/**
-  - Core/Lib/**
+  - Core/Lib/can/lib/primary/**
+  - Core/Lib/can/lib/secondary/**
 
 
 # When no makefile is present it will show a warning pop-up.

@@ -4,27 +4,18 @@
       "name": "STM32",
       "includePath": [
         "Core/Inc",
-        "Core/Lib/can-cicd/includes_generator/Primary",
-        "Core/Lib/can-cicd/includes_generator/Secondary",
-        "Core/Lib/can-cicd/includes_generator/bms",
-        "Core/Lib/can-cicd/includes_generator/primary",
-        "Core/Lib/can-cicd/includes_generator/secondary",
-        "Core/Lib/can-cicd/naked_generator/Primary/c",
-        "Core/Lib/can-cicd/naked_generator/Secondary/c",
-        "Core/Lib/can-cicd/naked_generator/bms/c",
-        "Core/Lib/can-cicd/naked_generator/primary/c",
-        "Core/Lib/can-cicd/naked_generator/secondary/c",
+        "Core/Lib/can/lib/primary",
+        "Core/Lib/can/lib/secondary",
         "Drivers/CMSIS/Device/ST/STM32F4xx/Include",
         "Drivers/CMSIS/Include",
         "Drivers/STM32F4xx_HAL_Driver/Inc",
-        "Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
-        "Inc"
+        "Drivers/STM32F4xx_HAL_Driver/Inc/Legacy"
       ],
       "defines": [
         "STM32F446xx",
         "USE_HAL_DRIVER"
       ],
-      "compilerPath": "/usr/bin/arm-none-eabi-gcc"
+      "compilerPath": "/home/alex/Software/ARM-toolchain/bin/arm-none-eabi-gcc"
     }
   ],
   "version": 4
